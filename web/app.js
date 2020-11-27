@@ -1,4 +1,4 @@
-var apiUrl = 'http://localhost:3000/demo/'; // 'https://1ky45v1fp9.execute-api.ap-southeast-2.amazonaws.com/demo/shotstack';
+var apiUrl = 'https://1ky45v1fp9.execute-api.ap-southeast-2.amazonaws.com/demo/'; // 'https://1ky45v1fp9.execute-api.ap-southeast-2.amazonaws.com/demo/shotstack';
 var apiEndpoint = apiUrl + 'shotstack'; // 'https://1ky45v1fp9.execute-api.ap-southeast-2.amazonaws.com/demo/upload/sign';
 var urlEndpoint = apiUrl + 'upload/sign';
 var s3Bucket = 'https://shotstack-demo-storage.s3-ap-southeast-2.amazonaws.com/'
