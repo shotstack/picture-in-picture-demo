@@ -1,13 +1,15 @@
-# Shotstack Watermarker Demo
+# Shotstack Picture-in-Picture Demo
 
 This project demonstrates how to use the Shotstack cloud video editing API to build an 
-application that adds a watermark to your video using a form.
+application that adds picture-in-picture functionality to your video using 
+a form.
 
-An HTML web form allows the user to input a video and watermark, decide where to place
-this watermark, and set other advanced options such as scale, opacity and offsets. A video
-is then created by the Shotstack API that overlays the watermark on top of the video.
+An HTML web form allows the user to input a base video and picture-in-picture video, 
+decide where to place it, and set other options such as scale, length and offsets. 
+A video is then created by the Shotstack API that overlays the picture-in-picture video 
+on top of the video.
 
-View the live demo at: https://shotstack.io/demo/watermarker/
+View the live demo at: https://shotstack.io/demo/pip/
 
 The demo is built using Node JS and can be used with either Express Framework or deployed 
 as a serverless projects using AWS Lambda and API Gateway.
