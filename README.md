@@ -9,7 +9,7 @@ decide where to place it, and set other options such as scale, length and offset
 A video is then created by the Shotstack API that overlays the picture-in-picture video 
 on top of the video.
 
-View the live demo at: https://shotstack.io/demo/pip/
+View the live demo at: https://shotstack.io/demo/picture-in-picture/
 
 The demo is built using Node JS and can be used with either Express Framework or deployed 
 as a serverless projects using AWS Lambda and API Gateway.
