@@ -1,0 +1,44 @@
+{
+    "timeline": {
+        "background": "#000000",
+        "tracks": [
+            {
+                "clips": [
+                    {
+                        "asset": {
+                            "type": "video",
+                            "src": "#",
+                            "volume": 1
+                        },
+                        "start": 0,
+                        "length": 5,
+                        "fit": "none",
+                        "scale": 0.35,
+                        "position": "bottomRight",
+                        "offset": {
+                            "x": 0.4,
+                            "y": 0.4
+                        }
+                    }
+                ]
+            },
+            {
+                "clips": [
+                    {
+                        "asset": {
+                            "type": "video",
+                            "src": "#",
+                            "volume": 0.2
+                        },
+                        "start": 0,
+                        "length": 5
+                    }
+                ]
+            }
+        ]
+    },
+    "output": {
+        "format": "mp4",
+        "resolution": "sd"
+    }
+}
