@@ -1,9 +1,10 @@
+'use strict';
+
 const axios = require('axios').default;
 const shotstackUrl = process.env.SHOTSTACK_HOST;
 const shotstackApiKey = process.env.SHOTSTACK_API_KEY;
 
-var submit = function(json) {
-
+const submit = (json) => {
     return new Promise((resolve, reject) => {
         axios({
             method: 'post',
@@ -20,11 +21,9 @@ var submit = function(json) {
             return reject(error)
         });
     })
-
 }
 
-var status = function(id) {
-
+const status = (id) => {
     return new Promise((resolve, reject) => {
         axios({
             method: 'get',
@@ -39,12 +38,9 @@ var status = function(id) {
             return reject(error);
         }
     })
-
 }
 
 module.exports = {
-
-    submit: submit,
-    status: status
-
+    submit,
+    status
 }

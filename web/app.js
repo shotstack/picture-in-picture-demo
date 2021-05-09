@@ -1,11 +1,15 @@
-var apiUrl = 'https://1ky45v1fp9.execute-api.ap-southeast-2.amazonaws.com/demo/'; // 'https://1ky45v1fp9.execute-api.ap-southeast-2.amazonaws.com/demo/shotstack';
-var apiEndpoint = apiUrl + 'shotstack'; // 'https://1ky45v1fp9.execute-api.ap-southeast-2.amazonaws.com/demo/upload/sign';
+var apiUrl =
+  'https://1ky45v1fp9.execute-api.ap-southeast-2.amazonaws.com/demo/';
+// var apiUrl = 'http://localhost:3000/demo/';
+var apiEndpoint = apiUrl + 'shotstack';
 var urlEndpoint = apiUrl + 'upload/sign';
-var s3Bucket = 'https://shotstack-demo-storage.s3-ap-southeast-2.amazonaws.com/'
+var probeEndpoint = 'https://api.shotstack.io/stage/probe/';
+var s3Bucket =
+  'https://shotstack-demo-storage.s3-ap-southeast-2.amazonaws.com/';
 var progress = 0;
 var progressIncrement = 10;
 var pollIntervalSeconds = 10;
-var unknownError = 'An unknown error has occurred. Dispatching minions...';
+var unknownError = 'An error has occurred, please try again later.';
 var player;
 
 /**
@@ -14,33 +18,34 @@ var player;
  * @param {String} src  the video URL
  */
 function initialiseVideo(src) {
+  player = new Plyr('#player', {
+    controls: [
+      'play-large',
+      'play',
+      'progress',
+      'mute',
+      'volume',
+      'download',
+      'fullscreen',
+    ],
+  });
 
-    player = new Plyr('#player', {
-        controls: [
-            'play-large',
-            'play',
-            'progress',
-            'mute',
-            'volume',
-            'download',
-            'fullscreen'
-        ]
-    });
+  player.source = {
+    type: 'video',
+    sources: [
+      {
+        src: src,
+        type: 'video/mp4',
+      },
+    ],
+  };
 
-    player.source = {
-        type: 'video',
-        sources: [{
-            src: src,
-            type: 'video/mp4',
-        }]
-    };
+  player.download = src;
 
-    player.download = src;
+  $('#status').removeClass('d-flex').addClass('d-none');
+  $('#player').show();
 
-    $('#status').removeClass('d-flex').addClass('d-none');
-    $('#player').show();
-
-    player.play();
+  player.play();
 }
 
 /**
@@ -49,21 +54,23 @@ function initialiseVideo(src) {
  * @param {String} id  the render job UUID
  */
 function pollVideoStatus(id) {
-    $.get(apiEndpoint + '/' + id, function (response) {
-        updateStatus(response.data.status);
-        if (!(response.data.status === 'done' || response.data.status === 'failed')) {
-            setTimeout(function () {
-                pollVideoStatus(id);
-            }, pollIntervalSeconds * 1000);
-        } else if (response.data.status === 'failed') {
-            updateStatus(response.data.status);
-        } else {
-            initialiseVideo(response.data.url);
-            initialiseJson(response.data.data);
-            initialiseDownload(response.data.url);
-            resetForm();
-        }
-    });
+  $.get(apiEndpoint + '/' + id, function (response) {
+    updateStatus(response.data.status);
+    if (
+      !(response.data.status === 'done' || response.data.status === 'failed')
+    ) {
+      setTimeout(function () {
+        pollVideoStatus(id);
+      }, pollIntervalSeconds * 1000);
+    } else if (response.data.status === 'failed') {
+      updateStatus(response.data.status);
+    } else {
+      initialiseVideo(response.data.url);
+      initialiseJson(response.data.data);
+      initialiseDownload(response.data.url);
+      resetForm();
+    }
+  });
 }
 
 /**
@@ -72,41 +79,42 @@ function pollVideoStatus(id) {
  * @param {String} status  the status text
  */
 function updateStatus(status) {
+  $('#status').removeClass('d-none');
+  $('#instructions').addClass('d-none');
 
-    $('#status').removeClass('d-none');
-    $('#instructions').addClass('d-none');
+  if (progress <= 90) {
+    progress += progressIncrement;
+  }
 
-    if (progress <= 90) {
-        progress += progressIncrement;
-    }
+  if (status === 'submitted') {
+    $('#status .fas').attr('class', 'fas fa-spinner fa-spin fa-2x');
+    $('#status p').text('SUBMITTED');
+  } else if (status === 'queued') {
+    $('#status .fas').attr('class', 'fas fa-history fa-2x');
+    $('#status p').text('QUEUED');
+  } else if (status === 'fetching') {
+    $('#status .fas').attr('class', 'fas fa-cloud-download-alt fa-2x');
+    $('#status p').text('DOWNLOADING ASSETS');
+  } else if (status === 'rendering') {
+    $('#status .fas').attr('class', 'fas fa-server fa-2x');
+    $('#status p').text('RENDERING VIDEO');
+  } else if (status === 'saving') {
+    $('#status .fas').attr('class', 'fas fa-save fa-2x');
+    $('#status p').text('SAVING VIDEO');
+  } else if (status === 'done') {
+    $('#status .fas').attr('class', 'fas fa-check-circle fa-2x');
+    $('#status p').text('READY');
+    progress = 100;
+  } else {
+    $('#status .fas').attr('class', 'fas fa-exclamation-triangle fa-2x');
+    $('#status p').text('SOMETHING WENT WRONG');
+    $('#submit-video').prop('disabled', false);
+    progress = 0;
+  }
 
-    if (status === 'submitted') {
-        $('#status .fas').attr('class', 'fas fa-spinner fa-spin fa-2x');
-        $('#status p').text('SUBMITTED');
-    } else if (status === 'queued') {
-        $('#status .fas').attr('class', 'fas fa-history fa-2x');
-        $('#status p').text('QUEUED');
-    } else if (status === 'fetching') {
-        $('#status .fas').attr('class', 'fas fa-cloud-download-alt fa-2x');
-        $('#status p').text('DOWNLOADING ASSETS');
-    } else if (status === 'rendering') {
-        $('#status .fas').attr('class', 'fas fa-server fa-2x');
-        $('#status p').text('RENDERING VIDEO');
-    } else if (status === 'saving') {
-        $('#status .fas').attr('class', 'fas fa-save fa-2x');
-        $('#status p').text('SAVING VIDEO');
-    } else if (status === 'done') {
-        $('#status .fas').attr('class', 'fas fa-check-circle fa-2x');
-        $('#status p').text('READY');
-        progress = 100;
-    } else {
-        $('#status .fas').attr('class', 'fas fa-exclamation-triangle fa-2x');
-        $('#status p').text('SOMETHING WENT WRONG');
-        $('#submit-video').prop('disabled', false);
-        progress = 0;
-    }
-
-    $('.progress-bar').css('width', progress + '%').attr('aria-valuenow', progress);
+  $('.progress-bar')
+    .css('width', progress + '%')
+    .attr('aria-valuenow', progress);
 }
 
 /**
@@ -115,117 +123,93 @@ function updateStatus(status) {
  * @param error
  */
 function displayError(error) {
-    updateStatus(null);
+  if (typeof error === 'string') {
+    $('#errors').text(error).removeClass('d-hide').addClass('d-block');
+    return;
+  }
 
-    if (error.status === 400) {
-        var response = error.responseJSON;
+  updateStatus(null);
 
-        if (response.data.isJoi) {
-            $.each(response.data.details, function (index, error) {
-                if (error.context.key === 'search') {
-                    $('#search-group label, #search').addClass('text-danger is-invalid');
-                    $('#search-group').append('<div class="d-block invalid-feedback">Enter a subject keyword to create a video</div>').show();
-                }
-
-                if (error.context.key === 'title') {
-                    $('#title-group label, #title').addClass('text-danger is-invalid');
-                    $('#title-group').append('<div class="d-block invalid-feedback">Enter a title for your video</div>').show();
-                }
-
-                if (error.context.key === 'soundtrack') {
-                    $('#soundtrack-group label, #soundtrack').addClass('text-danger is-invalid');
-                    $('#soundtrack-group').append('<div class="d-block invalid-feedback">Please choose a soundtrack from the list</div>').show();
-                }
-            });
-        } else if (typeof response.data === 'string') {
-            $('#errors').text(response.data).removeClass('d-hide').addClass('d-block');
-        } else {
-            $('#errors').text(unknownError).removeClass('d-hide').addClass('d-block');
-        }
+  if (error.status === 400) {
+    var response = error.responseJSON;
+    if (typeof response.data === 'string') {
+      $('#errors')
+        .text(response.data)
+        .removeClass('d-hide')
+        .addClass('d-block');
     } else {
-        $('#errors').text(unknownError).removeClass('d-hide').addClass('d-block');
+      $('#errors').text(unknownError).removeClass('d-hide').addClass('d-block');
     }
+  } else {
+    $('#errors').text(unknownError).removeClass('d-hide').addClass('d-block');
+  }
 }
 
 /**
  * Reset errors
  */
 function resetErrors() {
-    $('input, label, select').removeClass('text-danger is-invalid');
-    $('.invalid-feedback').remove();
-    $('#errors').text('').removeClass('d-block').addClass('d-none');
+  $('input, label, select').removeClass('text-danger is-invalid');
+  $('.invalid-feedback').remove();
+  $('#errors').text('').removeClass('d-block').addClass('d-none');
 }
 
 /**
  * Reset form
  */
 function resetForm() {
-    $('form').trigger("reset");
-    $('#submit-video').prop('disabled', false);
-    removeFile($('.remove-file'));
+  $('#submit-video').prop('disabled', false);
 }
 
 /**
  * Reset and delete video
  */
 function resetVideo() {
-    if (player) {
-        player.destroy();
-        player = undefined;
-    }
+  if (player) {
+    player.destroy();
+    player = undefined;
+  }
 
-    progress = 0;
+  progress = 0;
 
-    $('.json-container').html('');
-    $('#json').hide();
+  $('.json-container').html('');
+  $('#json').hide();
 }
 
 /**
  * Submit the form with data to create a Shotstack edit
  */
 function submitVideoEdit() {
-    updateStatus('submitted');
+  updateStatus('submitted');
 
-    var val = validateToggleButtons();
+  var formData = {
+    position: $('#position option:selected').val(),
+    scale: $('#scale option:selected').val(),
+    padding: $('#padding').val(),
+    duration: $('#clip-length').val(),
+    video: getSelectedVideoFile(),
+    pip: getSelectedPipVideoFile(),
+  };
 
-    var formData = {
-        'position': $('#position option:selected').val(),
-        'advanced': $('#advanced-checkbox').is(':checked'),
-        'scale': $('#pip-scale option:selected').val(),
-        'offsetX': $('#pip-x-offset').val(),
-        'offsetY': $('#pip-y-offset').val(),
-        'duration': $('#clip-length').val()
-    };
-
-    if (val.video == 'url') {
-        formData['video'] = $('#video-url').val();
-    } else {
-        formData['video'] = s3Bucket + $('#video-file .name').attr("data-file");
-    }
-
-    if (val.pip == 'url') {
-        formData['pip'] = $('#pip-url').val();
-    } else {
-        formData['pip'] = s3Bucket + $('#pip-file .name').attr("data-file");
-    }
-
-    $.ajax({
-        type: 'POST',
-        url: apiEndpoint,
-        data: JSON.stringify(formData),
-        dataType: 'json',
-        crossDomain: true,
-        contentType: 'application/json'
-    }).done(function (response) {
-        if (response.status !== 'success') {
-            displayError(response.message);
-            $('#submit-video').prop('disabled', false);
-        } else {
-            pollVideoStatus(response.data.response.id);
-        }
-    }).fail(function (error) {
-        displayError({ status: 400, });
+  $.ajax({
+    type: 'POST',
+    url: apiEndpoint,
+    data: JSON.stringify(formData),
+    dataType: 'json',
+    crossDomain: true,
+    contentType: 'application/json',
+  })
+    .done(function (response) {
+      if (response.status !== 'success') {
+        displayError(response.message);
         $('#submit-video').prop('disabled', false);
+      } else {
+        pollVideoStatus(response.data.response.id);
+      }
+    })
+    .fail(function (error) {
+      displayError(error);
+      $('#submit-video').prop('disabled', false);
     });
 }
 
@@ -240,15 +224,13 @@ function submitVideoEdit() {
  * @returns {*}
  */
 function styleJson(match, pIndent, pKey, pVal, pEnd) {
-    var key = '<span class=json-key>"';
-    var val = '<span class=json-value>';
-    var str = '<span class=json-string>';
-    var r = pIndent || '';
-    if (pKey)
-        r = r + key + pKey.replace(/[": ]/g, '') + '"</span>: ';
-    if (pVal)
-        r = r + (pVal[0] == '"' ? str : val) + pVal + '</span>';
-    return r + (pEnd || '');
+  var key = '<span class=json-key>"';
+  var val = '<span class=json-value>';
+  var str = '<span class=json-string>';
+  var r = pIndent || '';
+  if (pKey) r = r + key + pKey.replace(/[": ]/g, '') + '"</span>: ';
+  if (pVal) r = r + (pVal[0] == '"' ? str : val) + pVal + '</span>';
+  return r + (pEnd || '');
 }
 
 /**
@@ -258,11 +240,13 @@ function styleJson(match, pIndent, pKey, pVal, pEnd) {
  * @returns {string}
  */
 function prettyPrintJson(obj) {
-    var jsonLine = /^( *)("[\w]+": )?("[^"]*"|[\w.+-]*)?([,[{])?$/mg;
-    return JSON.stringify(obj, null, 3)
-        .replace(/&/g, '&amp;').replace(/\\"/g, '&quot;')
-        .replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(jsonLine, styleJson);
+  var jsonLine = /^( *)("[\w]+": )?("[^"]*"|[\w.+-]*)?([,[{])?$/gm;
+  return JSON.stringify(obj, null, 3)
+    .replace(/&/g, '&amp;')
+    .replace(/\\"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(jsonLine, styleJson);
 }
 
 /**
@@ -271,176 +255,415 @@ function prettyPrintJson(obj) {
  * @param json
  */
 function initialiseJson(json) {
-    $('#json').show();
-    $('.json-container').html(prettyPrintJson(json));
+  $('#json').show();
+  $('.json-container').html(prettyPrintJson(json));
 }
 
+/**
+ * Open video in new window
+ *
+ * @param {String} url
+ */
 function initialiseDownload(url) {
-    $('#download').attr("href", url);
+  $('#download').attr('href', url);
 }
 
-$(document).on('click', '#advanced-checkbox', function (e) {
+/**
+ * Set URL to active
+ * @param {Object} $urlButton
+ */
+function setUrlActive($urlButton) {
+  var $parent = $urlButton.closest('.video-group');
+  var $videoUrlField = $parent.children('.input-url');
+  var $uploadField = $parent.children('.upload');
 
-    if ($('#advanced-checkbox').is(':checked')) {
-        $('#advanced').slideDown('fast');
-        $('#advanced-checkbox-group .fas').attr('class', 'fas fa-caret-up float-right');
-        $(('input.advanced') && ('select.advanced')).prop('required', true);
+  $urlButton.addClass('btn-primary').removeClass('btn-secondary');
+  $videoUrlField.prop('required', true);
+  $uploadField.removeAttr('required');
+  $videoUrlField.slideDown('fast');
+}
+
+/**
+ * Set pip URL to active
+ * @param {Object} $urlButton
+ */
+function setPipUrlActive($urlButton) {
+  var $parent = $urlButton.closest('.video-group');
+  var $videoUrlField = $parent.children('.input-url');
+  var $uploadField = $parent.children('.upload');
+
+  $urlButton.addClass('btn-primary').removeClass('btn-secondary');
+  $videoUrlField.prop('required', true);
+  $uploadField.removeAttr('required');
+  $videoUrlField.slideDown('fast');
+}
+
+/**
+ * Set URL to inactive
+ * @param {Object} $urlButton
+ */
+function setUrlInactive($urlButton) {
+  var $parent = $urlButton.closest('.video-group');
+  var $videoUrlField = $parent.children('.input-url');
+
+  $urlButton.removeClass('btn-primary').addClass('btn-secondary');
+  $videoUrlField.removeAttr('required');
+  $videoUrlField.slideUp('fast');
+}
+
+/**
+ * Set pip URL to inactive
+ * @param {Object} $urlButton
+ */
+function setPipUrlInactive($urlButton) {
+  var $parent = $urlButton.closest('.video-group');
+  var $videoUrlField = $parent.children('.input-url');
+
+  $urlButton.removeClass('btn-primary').addClass('btn-secondary');
+  $videoUrlField.removeAttr('required');
+  $videoUrlField.slideUp('fast');
+}
+
+/**
+ * Set upload to active
+ * @param {Object} $uploadButton
+ */
+function setUploadActive($uploadButton) {
+  var $parent = $uploadButton.closest('.video-group');
+  var $videoUrlField = $parent.children('.input-url');
+  var $uploadField = $parent.find('.upload');
+  var $filePlaceholder = $parent.children('.file-placeholder');
+
+  $uploadButton.addClass('btn-primary').removeClass('btn-secondary');
+  $videoUrlField.removeAttr('required');
+  $uploadField.prop('required', true);
+  $filePlaceholder.slideDown('fast');
+}
+
+/**
+ * Set pip upload to active
+ * @param {Object} $uploadButton
+ */
+function setPipUploadActive($uploadButton) {
+  var $parent = $uploadButton.closest('.video-group');
+  var $videoUrlField = $parent.children('.input-url');
+  var $uploadField = $parent.find('.upload');
+  var $filePlaceholder = $parent.children('.file-placeholder');
+
+  $uploadButton.addClass('btn-primary').removeClass('btn-secondary');
+  $videoUrlField.removeAttr('required');
+  $uploadField.prop('required', true);
+  $filePlaceholder.slideDown('fast');
+}
+
+/**
+ * Set Upload to inactive
+ * @param {Object} $uploadButton
+ */
+function setUploadInactive($uploadButton) {
+  var $parent = $uploadButton.closest('.video-group');
+  var $uploadField = $parent.find('.upload');
+  var $filePlaceholder = $parent.children('.file-placeholder');
+
+  $uploadButton.removeClass('btn-primary').addClass('btn-secondary');
+  $uploadField.removeAttr('required');
+  $filePlaceholder.slideUp('fast');
+}
+
+/**
+ * Set pip Upload to inactive
+ * @param {Object} $uploadButton
+ */
+function setPipUploadInactive($uploadButton) {
+  var $parent = $uploadButton.closest('.video-group');
+  var $uploadField = $parent.find('.upload');
+  var $filePlaceholder = $parent.children('.file-placeholder');
+
+  $uploadButton.removeClass('btn-primary').addClass('btn-secondary');
+  $uploadField.removeAttr('required');
+  $filePlaceholder.slideUp('fast');
+}
+
+/**
+ * Remove a file from upload
+ *
+ * @param {*} $removeButton
+ */
+function removeFile($removeButton) {
+  var $uploadButton = $removeButton
+    .closest('.video-group')
+    .find('.upload-button');
+  var $filename = $removeButton.siblings('.name');
+
+  setUploadInactive($uploadButton);
+  $filename.empty().removeAttr('data-file');
+}
+
+/**
+ * Remove a pip file from upload
+ *
+ * @param {*} $removeButton
+ */
+function removePipFile($removeButton) {
+  var $uploadButton = $removeButton
+    .closest('.video-group')
+    .find('.upload-button');
+  var $filename = $removeButton.siblings('.name');
+
+  setUploadInactive($uploadButton);
+  $filename.empty().removeAttr('data-file');
+}
+
+/**
+ * Get the URL of the selected video file
+ */
+function getSelectedVideoFile() {
+  var $videoUrl = $('#video-url');
+  var $videoFile = $('#video-upload');
+
+  if ($videoUrl.prop('required')) {
+    return $videoUrl.val();
+  }
+
+  if ($videoFile.prop('required')) {
+    var $videoFileName = $('#video-file .name');
+    return s3Bucket + $videoFileName.attr('data-file');
+  }
+}
+
+/**
+ * Get the URL of the selected pip video file
+ */
+function getSelectedPipVideoFile() {
+  var $videoUrl = $('#pip-video-url');
+  var $videoFile = $('#pip-video-upload');
+
+  if ($videoUrl.prop('required')) {
+    return $videoUrl.val();
+  }
+
+  if ($videoFile.prop('required')) {
+    var $videoFileName = $('#pip-video-file .name');
+    return s3Bucket + $videoFileName.attr('data-file');
+  }
+}
+
+/**
+ * Get the length of a video file and update the max duration.
+ * Uses the Shotstack probe endpoint
+ *
+ * @param {String} url
+ */
+function setVideoDurationFromFile(url) {
+  var $clipLengthField = $('#clip-length');
+  $clipLengthField.prop('disabled', true);
+
+  $.get(probeEndpoint + encodeURIComponent(url), function (data, status) {
+    var duration = Math.round(data.response.metadata.format.duration * 10) / 10;
+    $clipLengthField.val(duration);
+    $clipLengthField.prop('max', duration);
+    $clipLengthField.prop('disabled', false);
+  }).fail(function () {
+    $clipLengthField.prop('max', 120);
+    $clipLengthField.prop('disabled', false);
+  });
+}
+
+/**
+ * Upload a file to AWS S3
+ *
+ * @param {String} file
+ * @param {Object} presignedPostData
+ * @param {Object} element
+ */
+function uploadFileToS3(file, presignedPostData, element) {
+  var $uploadField = $(element);
+  var $parent = $uploadField.closest('.video-group');
+  var $uploadButton = $parent.find('.upload-button');
+  var $loadingSpinner = $uploadButton.find('.loading-image');
+  var $uploadIcon = $uploadButton.find('.upload-icon');
+  var $filePlaceholder = $parent.children('.file-placeholder');
+  var $filePlaceholderName = $filePlaceholder.children('.name');
+
+  var formData = new FormData();
+  Object.keys(presignedPostData.fields).forEach((key) => {
+    formData.append(key, presignedPostData.fields[key]);
+  });
+  formData.append('file', file);
+
+  $loadingSpinner.removeClass('d-none');
+  $uploadIcon.addClass('d-none');
+
+  $.ajax({
+    url: presignedPostData.url,
+    method: 'POST',
+    data: formData,
+    contentType: false,
+    processData: false,
+  })
+    .done(function (response, statusText, xhr) {
+      $loadingSpinner.addClass('d-none');
+      $uploadIcon.removeClass('d-none');
+      if (xhr.status === 204) {
+        setUploadActive($uploadButton);
+        if ($uploadField.attr('id') === 'video-upload') {
+          setVideoDurationFromFile(s3Bucket + presignedPostData.fields['key']);
+        }
+        $filePlaceholderName
+          .text(file.name)
+          .attr('data-file', presignedPostData.fields['key']);
+      } else {
+        console.log(xhr.status);
+      }
+    })
+    .fail(function (error) {
+      console.error(error);
+      displayError('Failed to upload file to S3');
+    });
+}
+
+/**
+ * Get an AWS signed URL for S3 uploading
+ *
+ * @param {*} name
+ * @param {*} type
+ * @param {*} callback
+ */
+function getS3PresignedPostData(name, type, callback) {
+  var formData = new FormData();
+  var formData = {
+    name: name,
+    type: type,
+  };
+
+  $.ajax({
+    type: 'POST',
+    url: urlEndpoint,
+    data: JSON.stringify(formData),
+    dataType: 'json',
+    crossDomain: true,
+    contentType: 'application/json',
+  })
+    .done(function (response) {
+      if (response.status !== 'success') {
+        displayError(response.message);
+      } else {
+        callback(response.data);
+      }
+    })
+    .fail(function (error) {
+      console.error(error);
+      displayError('Failed to generate S3 signed URL');
+    });
+}
+
+/**
+ * Check video and watermark are selected
+ */
+function isFormValid() {
+  console.log('$(video-group)=', $('.video-group').find('input[required]'));
+  $requiredFields = $('.video-group').find('input[required]');
+
+  if ($requiredFields.length !== 2) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Event Handlers
+ */
+$(document).ready(function () {
+  /** URL button click event */
+  $('.url-button').click(function () {
+    var $urlButton = $(this);
+    var $parent = $urlButton.closest('.video-group');
+    var $videoUrlField = $parent.children('.input-url');
+    var $uploadButton = $parent.find('.upload-button');
+
+    setUploadInactive($uploadButton);
+
+    if ($videoUrlField.is(':hidden')) {
+      setUrlActive($urlButton);
     } else {
-        $('#advanced').slideUp('fast');
-        $('#advanced-checkbox-group .fas').attr('class', 'fas fa-caret-down float-right');
-        $(('input.advanced') && ('select.advanced')).removeAttr('required');
+      setUrlInactive($urlButton);
+    }
+  });
+
+  /** pip URL button click event */
+  $('.pip-url-button').click(function () {
+    var $urlButton = $(this);
+    var $parent = $urlButton.closest('.video-group');
+    var $videoUrlField = $parent.children('.input-url');
+    var $uploadButton = $parent.find('.pip-upload-button');
+
+    setPipUploadInactive($uploadButton);
+
+    if ($videoUrlField.is(':hidden')) {
+      setPipUrlActive($urlButton);
+    } else {
+      setPipUrlInactive($urlButton);
+    }
+  });
+
+  /** Upload button click event */
+  $('.upload-button').click(function (event) {
+    var $uploadButton = $(this);
+    var $parent = $uploadButton.closest('.video-group');
+    var $uploadField = $parent.find('.upload');
+    var $urlButton = $parent.find('.url-button');
+
+    setUrlInactive($urlButton);
+    $uploadField.prop('required', true).click();
+
+    event.preventDefault();
+  });
+
+  /** Upload button click event */
+  $('.pip-upload-button').click(function (event) {
+    var $uploadButton = $(this);
+    var $parent = $uploadButton.closest('.video-group');
+    var $uploadField = $parent.find('.upload');
+    var $urlButton = $parent.find('.pip-url-button');
+
+    setUrlInactive($urlButton);
+    $uploadField.prop('required', true).click();
+
+    event.preventDefault();
+  });
+
+  /** Remove file button click event */
+  $('.remove-file').click(function () {
+    removeFile($(this));
+  });
+
+  /** File upload change event */
+  $('.upload').change(function (event) {
+    var name = event.target.files[0].name;
+    var type = event.target.files[0].type;
+
+    getS3PresignedPostData(name, type, function (data) {
+      uploadFileToS3(event.target.files[0], data, event.target);
+    });
+  });
+
+  /** Video URL field change event */
+  $('#video-url').blur(function () {
+    var videoUrl = $(this).val();
+    setVideoDurationFromFile(videoUrl);
+  });
+
+  /** Form submit event */
+  $('form').submit(function (event) {
+    if (isFormValid()) {
+      resetErrors();
+      resetVideo();
+      submitVideoEdit();
+    } else {
+      displayError('Please select both a video and a watermark.');
     }
 
-});
-
-$(document).on('click', '.url-button', function (e) {
-
-    var videoUrl = $(this).closest('.toggle').siblings('.input-url');
-    var button = $(this);
-    var downloadButton = $(this).closest('.toggle').find('.upload-button');
-
-    videoUrl.slideToggle('fast', function () {
-        if (videoUrl.is(':hidden')) {
-            button.removeClass('btn-primary').addClass('btn-secondary');
-            videoUrl.removeAttr('required');
-            videoUrl.siblings('.upload').prop('required', true);
-            downloadButton.prop('disabled', false);
-        } else {
-            button.addClass('btn-primary').removeClass('btn-secondary');
-            videoUrl.prop('required', true);
-            videoUrl.siblings('.upload').removeAttr('required');
-            downloadButton.prop('disabled', true);
-        }
-    });
-
-
-})
-
-$(document).on('click', '.upload-button', function (e) {
-    e.preventDefault();
-    $(this).closest('.toggle').siblings('.upload').prop('required', true);
-    $(this).closest('.toggle').siblings('.upload').click();
-});
-
-$(document).on('click', '.remove-file', function (e) {
-    removeFile($(this));
-});
-
-function removeFile(thisObj) {
-    thisObj.closest('div').siblings('.name').empty();
-    thisObj.closest('div').siblings('.name').removeAttr('data-file');
-    thisObj.closest('.file-placeholder').addClass('d-none');
-    thisObj.closest('.file-placeholder').siblings('.toggle').find('.upload-button').removeClass('btn-primary').addClass('btn-secondary');
-    thisObj.closest('.file-placeholder').siblings('.toggle').find('.url-button').prop('disabled', false);
-}
-
-$(document).on('change', '.upload', function (e) {
-
-    var name = e.target.files[0].name;
-    var type = e.target.files[0].type;
-
-    getPresignedPostData(name, type, function (data) {
-        uploadFile(e.target.files[0], data, e.target);
-    });
-
-});
-
-function uploadFile(file, presignedPostData, thisObj) {
-
-    var formData = new FormData();
-
-    Object.keys(presignedPostData.fields).forEach(key => {
-        formData.append(key, presignedPostData.fields[key]);
-    });
-
-    formData.append('file', file);
-
-    $(thisObj).siblings('.toggle').find('.loading-image').removeClass('d-none');
-    $(thisObj).siblings('.toggle').find('.upload-icon').addClass('d-none');
-
-    $.ajax({
-        url: presignedPostData.url,
-        method: 'POST',
-        data: formData,
-        contentType: false,
-        processData: false
-    }).done(function (response, statusText, xhr) {
-        $(thisObj).siblings('.toggle').find('.loading-image').addClass('d-none');
-        $(thisObj).siblings('.toggle').find('.upload-icon').removeClass('d-none');
-        if (xhr.status == 204) {
-            $(thisObj).siblings('.file-placeholder').removeClass('d-none');
-            $(thisObj).siblings('.file-placeholder').children('.name').text(file.name);
-            $(thisObj).siblings('.file-placeholder').children('.name').attr('data-file', presignedPostData.fields['key']);
-            $(thisObj).siblings('.toggle').find('.upload-button').addClass('btn-primary').removeClass('btn-secondary');
-            $(thisObj).siblings('.toggle').find('.url-button').prop('disabled', true);
-        } else {
-            console.log(xhr.status);
-        }
-    }).fail(function (error) {
-        console.log(error);
-    });
-
-}
-
-function getPresignedPostData(name, type, callback) {
-
-    var formData = new FormData();
-
-    var formData = {
-        'name': name,
-        'type': type
-    };
-
-    $.ajax({
-        type: 'POST',
-        url: urlEndpoint,
-        data: JSON.stringify(formData),
-        dataType: 'json',
-        crossDomain: true,
-        contentType: 'application/json'
-    }).done(function (response) {
-        if (response.status !== 'success') {
-            displayError(response.message);
-        } else {
-            callback(response.data);
-        }
-
-    }).fail(function (error) {
-        displayError({ status: 400, });
-    });
-
-}
-
-function validateToggleButtons() {
-    var buttonActivation = { number: 0, video: null, pip: null };
-    $('.toggle-button').each(function (index) {
-        var sub = $(this)[0].parentElement.id.split('-')[0];
-        var type = $(this)[0].parentElement.id.split('-')[2];
-        $.map($(this)[0].classList, function (value, index) {
-            if (value == 'btn-primary' && sub == 'video') {
-                buttonActivation.number++;
-                buttonActivation.video = type;
-            } else if (value == 'btn-primary' && sub == 'pip') {
-                buttonActivation.number++;
-                buttonActivation.pip = type;
-            }
-        })
-    });
-    return buttonActivation;
-}
-
-$('[data-toggle="tooltip"]').tooltip({ trigger: 'click' });
-
-$(document).ready(function () {
-    $('form').submit(function (event) {
-        if (validateToggleButtons().number == 2) {
-            resetErrors();
-            resetVideo();
-            submitVideoEdit();
-        } else {
-            $('#errors').removeClass('d-none').text('Please select both a video and a pip.')
-        }
-
-        event.preventDefault();
-    });
+    event.preventDefault();
+  });
 });
