@@ -96,3 +96,7 @@ a:hover {
 .info {
     cursor: pointer;
 }
+
+label {
+  font-weight: 600;
+}
