@@ -90,3 +90,7 @@ input[name='video-url'],
 .info {
     cursor: pointer;
 }
+
+label {
+  font-weight: 600;
+}
