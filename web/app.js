@@ -9,6 +9,9 @@ var progressIncrement = 10;
 var pollIntervalSeconds = 10;
 var unknownError = 'An error has occurred, please try again later.';
 var player;
+var maxVideoDuration = 120;
+var pipWidth;
+var pipHeight;
 
 /**
  * Initialise and play the video
@@ -174,6 +177,8 @@ function submitVideoEdit() {
         duration: $('#clip-length').val(),
         video: getSelectedVideoFile(),
         pip: getSelectedPipVideoFile(),
+        pipWidth: pipWidth,
+        pipHeight: pipHeight,
     };
 
     $.ajax({
@@ -435,17 +440,29 @@ function getSelectedPipVideoFile() {
  *
  * @param {String} url
  */
-function setVideoDurationFromFile(url) {
+function setVideoDurationFromFile(url, field) {
     var $clipLengthField = $('#clip-length');
     $clipLengthField.prop('disabled', true);
 
     $.get(probeEndpoint + encodeURIComponent(url), function (data, status) {
-        var duration = Math.round(data.response.metadata.format.duration * 10) / 10;
-        $clipLengthField.val(duration);
-        $clipLengthField.prop('max', duration);
+        var metadata = data.response.metadata;
+        var duration = Math.round(metadata.format.duration * 10) / 10;
+
+        if (duration < maxVideoDuration) {
+            maxVideoDuration = duration;
+        }
+
+        if (field === 'pip-video-url' || field === 'pip-video-upload') {
+            pipWidth = metadata.streams[0].width
+            pipHeight = metadata.streams[0].height;
+        }
+
+        $clipLengthField.val(maxVideoDuration);
+        $clipLengthField.prop('max', maxVideoDuration);
         $clipLengthField.prop('disabled', false);
     }).fail(function () {
-        $clipLengthField.prop('max', 120);
+        maxVideoDuration = 120;
+        $clipLengthField.prop('max', maxVideoDuration);
         $clipLengthField.prop('disabled', false);
     });
 }
@@ -487,9 +504,7 @@ function uploadFileToS3(file, presignedPostData, element) {
             $uploadIcon.removeClass('d-none');
             if (xhr.status === 204) {
                 setUploadActive($uploadButton);
-                if ($uploadField.attr('id') === 'video-upload') {
-                    setVideoDurationFromFile(s3Bucket + presignedPostData.fields['key']);
-                }
+                setVideoDurationFromFile(s3Bucket + presignedPostData.fields['key'], $uploadField.attr('id'));
                 $filePlaceholderName
                     .text(file.name)
                     .attr('data-file', presignedPostData.fields['key']);
@@ -542,7 +557,6 @@ function getS3PresignedPostData(name, type, callback) {
  * Check video and pip-video are selected
  */
 function isFormValid() {
-    console.log('$(video-group)=', $('.video-group').find('input[required]'));
     $requiredFields = $('.video-group').find('input[required]');
 
     if ($requiredFields.length !== 2) {
@@ -630,9 +644,9 @@ $(document).ready(function () {
     });
 
     /** Video URL field change event */
-    $('#video-url').blur(function () {
+    $('#video-url, #pip-video-url').blur(function () {
         var videoUrl = $(this).val();
-        setVideoDurationFromFile(videoUrl);
+        setVideoDurationFromFile(videoUrl, $(this).attr('id'));
     });
 
     /** Form submit event */

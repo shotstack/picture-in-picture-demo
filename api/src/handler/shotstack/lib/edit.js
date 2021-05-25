@@ -8,6 +8,13 @@ const SD_HEIGHT = 576;
 const PIP_VIDEO_INDEX = 0;
 const VIDEO_INDEX = 1;
 
+const scaleToOutputSize = (width, height, scale) => {
+  const widthDivisor = (SD_WIDTH / width) * scale;
+  const heightDivisor = (SD_HEIGHT / height) * scale;
+
+  return Math.min(Math.round(widthDivisor * 100) / 100, Math.round(heightDivisor * 100) / 100);
+}
+
 const convertPaddingToOffsets = (padding, position) => {
     let xOffset = 0;
     let yOffset = 0;
@@ -44,6 +51,8 @@ const validateBody = (body) => {
         duration: Joi.number().min(0.1).max(120),
         padding: Joi.number().min(0).max(100),
         scale: Joi.number().min(0).max(2),
+        pipWidth: Joi.number().min(0).max(1920),
+        pipHeight: Joi.number().min(0).max(1080),
     });
 
     return schema.validate({
@@ -53,6 +62,8 @@ const validateBody = (body) => {
         duration: body.duration,
         padding: body.padding,
         scale: body.scale,
+        pipWidth: body.pipWidth,
+        pipHeight: body.pipHeight,
     });
 };
 
@@ -69,8 +80,7 @@ const createJson = (body) => {
         const position = body.position;
         const duration = parseFloat(body.duration) || 15;
         const [x, y] = convertPaddingToOffsets(parseInt(body.padding) || 20, position);
-        const scale = parseFloat(body.scale) || 0;
-        const opacity = parseFloat(body.opacity) || 0.7;
+        const scale = scaleToOutputSize(body.pipWidth || SD_WIDTH, body.pipHeight || SD_HEIGHT, body.scale || 0.25) ;
 
         fs.readFile(__dirname + '/template.json', 'utf-8', function (err, data) {
             if (err) {
@@ -86,7 +96,6 @@ const createJson = (body) => {
             jsonParsed.timeline.tracks[PIP_VIDEO_INDEX].clips[0].offset.x = x;
             jsonParsed.timeline.tracks[PIP_VIDEO_INDEX].clips[0].offset.y = y;
             jsonParsed.timeline.tracks[PIP_VIDEO_INDEX].clips[0].scale = scale;
-            jsonParsed.timeline.tracks[PIP_VIDEO_INDEX].clips[0].opacity = opacity;
             jsonParsed.timeline.tracks[VIDEO_INDEX].clips[0].asset.src = videoUrl;
             jsonParsed.timeline.tracks[VIDEO_INDEX].clips[0].length = duration;
 
