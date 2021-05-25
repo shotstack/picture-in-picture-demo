@@ -9,10 +9,10 @@ const PIP_VIDEO_INDEX = 0;
 const VIDEO_INDEX = 1;
 
 const scaleToOutputSize = (width, height, scale) => {
-  const widthDivisor = (SD_WIDTH / width) * scale;
-  const heightDivisor = (SD_HEIGHT / height) * scale;
+    const widthDivisor = (SD_WIDTH / width) * scale;
+    const heightDivisor = (SD_HEIGHT / height) * scale;
 
-  return Math.min(Math.round(widthDivisor * 100) / 100, Math.round(heightDivisor * 100) / 100);
+    return Math.min(Math.round(widthDivisor * 100) / 100, Math.round(heightDivisor * 100) / 100);
 }
 
 const convertPaddingToOffsets = (padding, position) => {
