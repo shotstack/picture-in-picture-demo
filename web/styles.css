@@ -11,7 +11,12 @@
     padding-bottom: 16px;
 }
 
-#player, #json {
+video {
+    margin-bottom: 0 !important;
+}
+
+#player,
+#json {
     display: none;
 }
 
@@ -46,15 +51,9 @@ header {
     margin-bottom: 2rem;
 }
 
-.btn-primary {
-    font-weight: bold;
-    background-color: #25d3d0;
-    border-color: #25d3d0;
-}
-
-.btn-primary:hover, .btn-primary:active {
-    background-color: #25d3d0;
-    border-color: #25d3d0;
+.video-btn-group .btn.active {
+    background-color: #25d3d0 !important;
+    border-color: #25d3d0 !important;
 }
 
 a {
@@ -68,7 +67,8 @@ a:hover {
     background-color: transparent;
 }
 
-#instructions, #status {
+#instructions,
+#status {
     margin-top: 7rem;
 }
 
@@ -76,16 +76,10 @@ a:hover {
     margin: 0;
 }
 
-#advanced {
-    display: none;
-}
-
-#advanced-checkbox-group label{
-    cursor: pointer;
-    font-weight: 700;
-}
-
-#video-url, #pip-url  {
+input[name='video-url'],
+#video-url,
+#pip-video-url,
+.file-placeholder {
     display: none;
 }
 

@@ -1,8 +1,7 @@
 # Shotstack Picture-in-Picture Demo
 
 This project demonstrates how to use the Shotstack cloud video editing API to build an 
-application that adds picture-in-picture functionality to your video using 
-a form.
+application that adds picture-in-picture functionality to your video using a form.
 
 An HTML web form allows the user to input a base video and picture-in-picture video, 
 decide where to place it, and set other options such as scale, length and offsets. 
