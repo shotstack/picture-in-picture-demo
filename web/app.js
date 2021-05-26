@@ -1,5 +1,5 @@
-var apiUrl = 'https://1ky45v1fp9.execute-api.ap-southeast-2.amazonaws.com/demo/';
-// var apiUrl = 'http://localhost:3000/demo/';
+// var apiUrl = 'https://1ky45v1fp9.execute-api.ap-southeast-2.amazonaws.com/demo/';
+var apiUrl = 'http://localhost:3000/demo/';
 var apiEndpoint = apiUrl + 'shotstack';
 var urlEndpoint = apiUrl + 'upload/sign';
 var probeEndpoint = 'https://api.shotstack.io/stage/probe/';
@@ -274,21 +274,6 @@ function setUrlActive($urlButton) {
 }
 
 /**
- * Set pip URL to active
- * @param {Object} $urlButton
- */
-function setPipUrlActive($urlButton) {
-    var $parent = $urlButton.closest('.video-group');
-    var $videoUrlField = $parent.children('.input-url');
-    var $uploadField = $parent.children('.upload');
-
-    $urlButton.addClass('btn-primary').removeClass('btn-secondary');
-    $videoUrlField.prop('required', true);
-    $uploadField.removeAttr('required');
-    $videoUrlField.slideDown('fast');
-}
-
-/**
  * Set URL to inactive
  * @param {Object} $urlButton
  */
@@ -302,39 +287,10 @@ function setUrlInactive($urlButton) {
 }
 
 /**
- * Set pip URL to inactive
- * @param {Object} $urlButton
- */
-function setPipUrlInactive($urlButton) {
-    var $parent = $urlButton.closest('.video-group');
-    var $videoUrlField = $parent.children('.input-url');
-
-    $urlButton.removeClass('btn-primary').addClass('btn-secondary');
-    $videoUrlField.removeAttr('required');
-    $videoUrlField.slideUp('fast');
-}
-
-/**
  * Set upload to active
  * @param {Object} $uploadButton
  */
 function setUploadActive($uploadButton) {
-    var $parent = $uploadButton.closest('.video-group');
-    var $videoUrlField = $parent.children('.input-url');
-    var $uploadField = $parent.find('.upload');
-    var $filePlaceholder = $parent.children('.file-placeholder');
-
-    $uploadButton.addClass('btn-primary').removeClass('btn-secondary');
-    $videoUrlField.removeAttr('required');
-    $uploadField.prop('required', true);
-    $filePlaceholder.slideDown('fast');
-}
-
-/**
- * Set pip upload to active
- * @param {Object} $uploadButton
- */
-function setPipUploadActive($uploadButton) {
     var $parent = $uploadButton.closest('.video-group');
     var $videoUrlField = $parent.children('.input-url');
     var $uploadField = $parent.find('.upload');
@@ -361,38 +317,11 @@ function setUploadInactive($uploadButton) {
 }
 
 /**
- * Set pip Upload to inactive
- * @param {Object} $uploadButton
- */
-function setPipUploadInactive($uploadButton) {
-    var $parent = $uploadButton.closest('.video-group');
-    var $uploadField = $parent.find('.upload');
-    var $filePlaceholder = $parent.children('.file-placeholder');
-
-    $uploadButton.removeClass('btn-primary').addClass('btn-secondary');
-    $uploadField.removeAttr('required');
-    $filePlaceholder.slideUp('fast');
-}
-
-/**
  * Remove a file from upload
  *
  * @param {*} $removeButton
  */
 function removeFile($removeButton) {
-    var $uploadButton = $removeButton.closest('.video-group').find('.upload-button');
-    var $filename = $removeButton.siblings('.name');
-
-    setUploadInactive($uploadButton);
-    $filename.empty().removeAttr('data-file');
-}
-
-/**
- * Remove a pip file from upload
- *
- * @param {*} $removeButton
- */
-function removePipFile($removeButton) {
     var $uploadButton = $removeButton.closest('.video-group').find('.upload-button');
     var $filename = $removeButton.siblings('.name');
 
@@ -586,41 +515,12 @@ $(document).ready(function () {
         }
     });
 
-    /** pip URL button click event */
-    $('.pip-url-button').click(function () {
-        var $urlButton = $(this);
-        var $parent = $urlButton.closest('.video-group');
-        var $videoUrlField = $parent.children('.input-url');
-        var $uploadButton = $parent.find('.pip-upload-button');
-
-        setPipUploadInactive($uploadButton);
-
-        if ($videoUrlField.is(':hidden')) {
-            setPipUrlActive($urlButton);
-        } else {
-            setPipUrlInactive($urlButton);
-        }
-    });
-
     /** Upload button click event */
     $('.upload-button').click(function (event) {
         var $uploadButton = $(this);
         var $parent = $uploadButton.closest('.video-group');
         var $uploadField = $parent.find('.upload');
         var $urlButton = $parent.find('.url-button');
-
-        setUrlInactive($urlButton);
-        $uploadField.prop('required', true).click();
-
-        event.preventDefault();
-    });
-
-    /** Upload button click event */
-    $('.pip-upload-button').click(function (event) {
-        var $uploadButton = $(this);
-        var $parent = $uploadButton.closest('.video-group');
-        var $uploadField = $parent.find('.upload');
-        var $urlButton = $parent.find('.pip-url-button');
 
         setUrlInactive($urlButton);
         $uploadField.prop('required', true).click();
