@@ -341,7 +341,7 @@ function getSelectedVideoFile() {
 
     if ($videoFile.prop('required')) {
         var $videoFileName = $('#video-file .name');
-        return s3Bucket + $videoFileName.attr('data-file');
+        return s3Bucket + encodeURIComponent($videoFileName.attr('data-file'));
     }
 }
 
@@ -358,7 +358,7 @@ function getSelectedPipVideoFile() {
 
     if ($videoFile.prop('required')) {
         var $videoFileName = $('#pip-video-file .name');
-        return s3Bucket + $videoFileName.attr('data-file');
+        return s3Bucket + encodeURIComponent($videoFileName.attr('data-file'));
     }
 }
 
